@@ -12,28 +12,28 @@
       padding: 0;
     }
     body {
-      background-color: #121212;
+      background-color: #1a1a1a;
       color: #ffffff;
       font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", Meiryo, sans-serif;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
       display: flex;
-      padding: 12px;
+      padding: 10px;
     }
-    .signage-grid {
+    .signage-frame {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1.2fr 1fr 1fr;
       grid-template-rows: 1fr 1fr;
-      gap: 12px;
+      gap: 8px;
       width: 100%;
       height: 100%;
     }
     .box {
-      background-color: #000000;
-      border: 3px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 14px;
+      background-color: #050505;
+      border: 3px solid #ffffff;
+      border-radius: 6px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -42,66 +42,69 @@
       font-size: 26px;
       font-weight: bold;
       color: #ffd700;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       letter-spacing: 4px;
-      border-bottom: 2px solid #333333;
-      padding-bottom: 6px;
+      display: inline-block;
     }
-    /* 右上：日付 + 外出 */
     .box-right-top {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
     }
     .date-card {
-      background-color: #000000;
-      border: 3px solid #e0e0e0;
-      border-radius: 8px;
+      background-color: #050505;
+      border: 3px solid #ffffff;
+      border-radius: 6px;
       font-size: 32px;
       font-weight: bold;
       text-align: center;
-      padding: 10px 0;
-      letter-spacing: 2px;
+      padding: 6px 0;
       color: #ffffff;
+      letter-spacing: 2px;
     }
-    .item-list {
-      list-style: none;
-      font-size: 22px;
-      line-height: 1.6;
+    .content-box {
+      flex: 1;
       overflow-y: auto;
+      font-size: 22px;
+      line-height: 1.5;
+      font-weight: bold;
     }
-    .item-list li {
-      padding: 4px 0;
-      border-bottom: 1px dotted #444444;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
+    .item-text {
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+    .memo-text {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .red-text {
+      color: #ff4d4d;
     }
     .empty {
-      color: #555555;
+      color: #666666;
       font-size: 20px;
-      margin-top: 10px;
+      margin-top: 4px;
     }
   </style>
 </head>
 <body>
-  <div class="signage-grid">
+  <div class="signage-frame">
     <!-- 出張 -->
     <div class="box">
       <div class="box-title">出　張</div>
-      <div class="empty">なし</div>
+      <div class="content-box"><div class="item-text">立松 (~8/22)</div><div class="item-text">川村</div><div class="item-text">テニス1</div><div class="item-text">内海</div><div class="item-text">石井</div></div>
     </div>
     <!-- 自宅待機 -->
     <div class="box">
       <div class="box-title">自宅待機</div>
       <div class="empty">なし</div>
     </div>
-    <!-- 日付 & 外出 -->
+    <!-- 日付 ＆ 外出 -->
     <div class="box-right-top">
       <div class="date-card">8月 21日(金)</div>
       <div class="box" style="flex: 1;">
         <div class="box-title">外　出</div>
-        <div class="empty">なし</div>
+        <div class="content-box memo-text">田中徳(10:00-14:00)</div>
       </div>
     </div>
     <!-- 年休 -->
