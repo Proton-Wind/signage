@@ -12,115 +12,148 @@
       padding: 0;
     }
     body {
-      background-color: #1a1a1a;
+      background-color: #222222;
       color: #ffffff;
-      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", Meiryo, sans-serif;
+      font-family: "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
       display: flex;
-      padding: 10px;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
     }
-    .signage-frame {
+    .signage-container {
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      border: 4px solid #ffffff;
+      box-sizing: border-box;
+    }
+    .signage-grid {
       display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 1fr;
       grid-template-rows: 1fr 1fr;
-      gap: 8px;
+      gap: 4px;
       width: 100%;
       height: 100%;
     }
-    .box {
-      background-color: #050505;
-      border: 3px solid #ffffff;
-      border-radius: 6px;
-      padding: 12px 14px;
+    .signage-cell {
+      background-color: #0d0d0d;
+      padding: 14px 18px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-sizing: border-box;
     }
-    .box-title {
-      font-size: 26px;
-      font-weight: bold;
-      color: #ffd700;
-      margin-bottom: 8px;
-      letter-spacing: 4px;
-      display: inline-block;
-    }
-    .box-right-top {
+    .signage-cell-date-wrapper {
+      background-color: #0d0d0d;
       display: flex;
       flex-direction: column;
-      gap: 8px;
     }
-    .date-card {
-      background-color: #050505;
-      border: 3px solid #ffffff;
-      border-radius: 6px;
-      font-size: 32px;
-      font-weight: bold;
+    .signage-date {
+      border-bottom: 4px solid #ffffff;
       text-align: center;
-      padding: 6px 0;
+      font-size: 30px;
       color: #ffffff;
-      letter-spacing: 2px;
-    }
-    .content-box {
-      flex: 1;
-      overflow-y: auto;
-      font-size: 22px;
-      line-height: 1.5;
+      padding: 10px;
       font-weight: bold;
     }
-    .item-text {
-      margin-bottom: 6px;
-      word-break: break-all;
+    .signage-out {
+      flex: 1;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
     }
-    .memo-text {
-      white-space: pre-wrap;
-      word-break: break-all;
+    .signage-title {
+      color: #ffd700;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      letter-spacing: 0.2em;
+      line-height: 1.2;
     }
-    .red-text {
-      color: #ff4d4d;
+    .signage-content {
+      color: #ffffff;
+      font-size: 24px;
+      line-height: 1.4;
+      flex: 1;
+      overflow: hidden;
     }
-    .empty {
-      color: #666666;
-      font-size: 20px;
-      margin-top: 4px;
+    .signage-content-leave {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      column-gap: 20px;
+    }
+    .data-badge {
+      display: inline-block;
+      margin-right: 0.8em;
+      margin-bottom: 0.3em;
+    }
+    .data-badge-leave {
+      display: block;
+      margin-bottom: 0.2em;
+    }
+    .today-applied {
+      color: #ffd700;
     }
   </style>
 </head>
 <body>
-  <div class="signage-frame">
-    <!-- 出張 -->
-    <div class="box">
-      <div class="box-title">出　張</div>
-      <div class="content-box"><div class="item-text">立松 (~8/22)</div><div class="item-text">川村</div><div class="item-text">テニス1</div><div class="item-text">内海</div><div class="item-text">石井</div></div>
-    </div>
-    <!-- 自宅待機 -->
-    <div class="box">
-      <div class="box-title">自宅待機</div>
-      <div class="empty">なし</div>
-    </div>
-    <!-- 日付 ＆ 外出 -->
-    <div class="box-right-top">
-      <div class="date-card">8月 21日(金)</div>
-      <div class="box" style="flex: 1;">
-        <div class="box-title">外　出</div>
-        <div class="content-box memo-text">田中徳(10:00-14:00)</div>
+  <div class="signage-container">
+    <div class="signage-grid">
+      <!-- 出張 -->
+      <div class="signage-cell">
+        <div class="signage-title">出 張</div>
+        <div class="signage-content">
+          <div class=" data-badge">立松(700) <span style="font-size:70%; color:#55ff55;">(~8/22)</span></div><div class=" data-badge">川村(800)</div><div class=" data-badge">伊藤鋼・法兼・須原(800)</div><div class=" data-badge">内海(1330)</div><div class=" data-badge">石井(700)</div>
+        </div>
       </div>
-    </div>
-    <!-- 年休 -->
-    <div class="box">
-      <div class="box-title">年　休</div>
-      <div class="empty">なし</div>
-    </div>
-    <!-- 遅刻 -->
-    <div class="box">
-      <div class="box-title">遅　刻</div>
-      <div class="empty">なし</div>
-    </div>
-    <!-- 早退 -->
-    <div class="box">
-      <div class="box-title">早　退</div>
-      <div class="empty">なし</div>
+
+      <!-- 自宅待機 -->
+      <div class="signage-cell">
+        <div class="signage-title">自宅待機</div>
+        <div class="signage-content">
+          
+        </div>
+      </div>
+
+      <!-- 日付 ＆ 外出 -->
+      <div class="signage-cell-date-wrapper">
+        <div class="signage-date">8月 21日(金)</div>
+        <div class="signage-out">
+          <div class="signage-title">外 出</div>
+          <div class="signage-content" style="white-space: pre-wrap;">田中徳(10:00-14:00)</div>
+        </div>
+      </div>
+
+      <!-- 年休 -->
+      <div class="signage-cell">
+        <div class="signage-title">年 休</div>
+        <div class="signage-content signage-content-leave">
+          <div style="color: #ff5555; font-weight: bold; font-size: 26px;">掲示物参照</div>
+        </div>
+      </div>
+
+      <!-- 遅刻 -->
+      <div class="signage-cell">
+        <div class="signage-title">遅 刻</div>
+        <div class="signage-content">
+          <div style="color: #ff5555; font-weight: bold; font-size: 26px;">掲示物参照</div>
+        </div>
+      </div>
+
+      <!-- 早退 -->
+      <div class="signage-cell">
+        <div class="signage-title">早 退</div>
+        <div class="signage-content">
+          <div style="color: #ff5555; font-weight: bold; font-size: 26px;">掲示物参照</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
