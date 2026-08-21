@@ -1,1 +1,1844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta http-equiv="refresh" content="3600">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出張・年休・遅刻・早退 願（届） 入力ツール</title>
 
+<script>
+    const IS_ADMIN = "false" === "true";
+    const USER_EMAIL = "";
+</script>
+<style>
+     
+    :root {
+        --border-color: #000;
+        --holiday-bg: #ffe0e0; --saturday-bg: #e0f0ff;
+        --morning-bg: #e67e22; --morning-color: #000;     
+        --afternoon-bg: #8e44ad; --afternoon-color: #fff; 
+        --closed-bg: #ffe0e0; --closed-color: black;
+    }
+    body { 
+        font-family: "MS Mincho", "Hiragino Mincho Pro", serif; 
+        margin: 0; padding: 10px 20px 20px 20px; 
+        background-color: #f0f0f0; 
+        -webkit-text-size-adjust: 100%; 
+        text-size-adjust: 100%;
+    }
+    
+    @page { size: A3 landscape; margin: 10mm; }
+    @media print {
+        body { padding: 0; background-color: #fff; }
+        .no-print { display: none !important; }
+        .page { width: 400mm !important; min-width: auto !important; max-width: none !important; margin: 0; box-shadow: none; border: none; page-break-after: always; }
+        .page-tendays { height: 277mm !important; }
+    }
+
+    .admin-only { display: none !important; }
+
+     
+    .control-panel-wrapper {
+        background: #fff; border-radius: 8px; margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden;
+         
+        position: sticky; 
+        top: 10px;        
+        z-index: 9999;    
+    }
+    .control-panel-header {
+        background: #f8f9fa; padding: 10px 15px; cursor: pointer;
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid #ddd; user-select: none; transition: background 0.2s;
+    }
+    .control-panel-header:hover { background: #e2e6ea; }
+    .control-panel-wrapper.collapsed .control-panel-header { border-bottom: none; }
+    
+    .control-panel {
+        padding: 15px; display: flex; flex-wrap: wrap; gap: 15px;
+        align-items: center; font-family: sans-serif; position: relative;
+        transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        max-height: 500px; opacity: 1;
+    }
+    .control-panel.collapsed {
+        max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; pointer-events: none;
+    }
+
+    .control-group { border-right: 1px solid #ddd; padding-right: 15px; }
+    .control-group:last-child { border-right: none; }
+    button { padding: 5px 15px; cursor: pointer; border-radius:4px; border:none; color:#fff; transition: opacity 0.2s; }
+    button:hover { opacity: 0.8; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-blue { background:#007BFF; } .btn-green { background:#28a745; } 
+    .btn-cyan { background:#17a2b8; } .btn-gray { background:#6c757d; } .btn-red { background:#dc3545; }
+    .info-text { font-size: 12px; color: #666; margin-top: 2px; line-height: 1.4; }
+
+     
+    .page {
+        width: 100%; max-width: 1500px; min-width: 1100px; 
+        margin: 0 auto 30px auto; background: #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2); padding: 10mm; box-sizing: border-box; display: flex; flex-direction: column;
+    }
+    .page-tendays { height: 900px; }
+
+    .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; font-size: 24px; }
+    .header-title { text-align: center; flex-grow: 1; letter-spacing: 5px; }
+    .table-container { flex-grow: 1; display: flex; flex-direction: column; overflow-x: auto; }
+    
+    table { width: 100%; height: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+    .tendays-table th, .tendays-table td { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: center; vertical-align: top; }
+    .tendays-table th { border-top: 1px solid var(--border-color); padding: 8px 0; font-weight: normal; font-size: 16px; }
+    .tendays-table th.col-memo { border: none !important; }
+    
+    .col-memo { width: 6%; } .col-day { width: 3%; } .col-weekday { width: 3%; } 
+    .col-trip { width: 20%; } .col-leave { width: 28%; } .col-late { width: 12%; } .col-early { width: 28%; }
+
+    td.td-day { font-size: 20px; vertical-align: middle; }
+    td.td-weekday { font-size: 18px; vertical-align: middle; }
+
+    .td-memo { border: none !important; outline: none; text-align: left !important; padding: 4px; font-size: 12px; overflow: hidden; white-space: pre-wrap; cursor: text; }
+    .td-memo:focus { background-color: #ffffe0; }
+
+     
+    .td-notice { 
+        vertical-align: middle; 
+        position: relative; 
+        background-color: #fff; 
+        border-bottom: 1px solid var(--border-color); 
+        border-right: 1px solid var(--border-color);
+        text-align: center; 
+    }
+    body.is-admin .td-notice { cursor: pointer; }
+    body.is-admin .td-notice:hover { background-color: #f8f9fa; }
+    
+    .notice-text-large {
+        font-family: "MS Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+        font-size: 34px;
+        font-weight: bold;
+        letter-spacing: 12px;
+        color: #000;
+        user-select: none;
+    }
+
+     
+    .vertical-text { 
+        writing-mode: vertical-rl; 
+        -webkit-writing-mode: vertical-rl; 
+        text-orientation: upright; 
+        font-size: 11.5px; 
+        line-height: 1; 
+        letter-spacing: -1px; 
+        white-space: nowrap; 
+    }
+    .cell-container { display: flex; flex-direction: row; height: 100%; width: 100%; padding: 2px; box-sizing: border-box; justify-content: flex-start; }
+    
+    .leave-wrapper { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+    .leave-half { flex: 1; display: flex; flex-direction: row; justify-content: flex-start; padding: 2px; overflow: hidden; }
+    
+    .clickable-item { margin: 0 1px !important; }
+
+     
+    .td-trip { padding: 0 !important; position: relative; overflow: visible; }
+    .trip-lanes-wrapper { position: absolute; top: 0; left: 0; height: 100%; display: flex; align-items: stretch; pointer-events: none; z-index: 20; }
+    .trip-lanes { display: flex; flex-direction: row; height: 100%; pointer-events: auto; width: max-content; }
+    .lane { display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; flex-shrink: 0; }    
+    .trip-block { box-sizing: border-box; min-width: 14px; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 10; cursor: grab; }    
+    .trip-block:active { cursor: grabbing; }
+    .trip-block.type-set { border: 3px double var(--border-color); }
+    .trip-block.type-person { border: none; }
+
+    .trip-content { 
+        position: absolute; top: 2px; left: 0; width: 100%; 
+        display: flex; flex-direction: column; align-items: center; 
+        z-index: 50; pointer-events: none; 
+    }
+    .names-wrap { 
+        display: flex; flex-direction: row; justify-content: center; align-items: flex-start;
+        margin: 0; padding: 0; 
+    }
+    .set-box { 
+        border: 1px solid var(--border-color); 
+        padding: 1px 2px; 
+        background: #fff; 
+        display: flex; flex-direction: row; gap: 2px; 
+    }
+    .item-block { display: block; margin: 0; }
+    
+    .time-text { 
+        display: block; 
+        margin-top: 1px; 
+        font-size: 10.5px; 
+        font-family: sans-serif; 
+        letter-spacing: 0; 
+        line-height: 1;
+    }
+    .tcy { 
+        text-combine-upright: all; 
+        -webkit-text-combine: horizontal; 
+        display: inline-block; 
+    }
+
+     
+    .signage-wrapper { display: flex; justify-content: center; background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .signage-container { width: 100%; max-width: calc(85vh * 16 / 9); aspect-ratio: 16/9; background-color: #fff; border: 4px solid #fff; box-sizing: border-box; font-family: "Meiryo", sans-serif; container-type: inline-size; }
+    .signage-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; width: 100%; height: 100%; }
+    .signage-cell { background-color: #0d0d0d; padding: 1cqw 1.5cqw; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
+    .signage-cell-date-wrapper { background-color: #0d0d0d; display: flex; flex-direction: column; }
+    .signage-date { border-bottom: 4px solid #fff; text-align: center; font-size: 2vw; font-size: 2.8cqw; color: #fff; padding: 1cqw; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+    .signage-out { flex: 1; padding: 1cqw 1.5cqw; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
+    .signage-title { color: #ffd700; font-size: 1.5vw; font-size: 1.8cqw; font-weight: bold; margin-bottom: 0.5cqw; letter-spacing: 0.2em; line-height: 1.2; }
+    .signage-content { color: #fff; font-size: 1.5vw; font-size: 2.2cqw; line-height: 1.3; flex: 1; overflow: hidden; }
+    [contenteditable="true"] { outline: none; border: none; }
+    [contenteditable="true"]:focus { background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    .signage-content-leave { display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; column-gap: 2cqw; }
+    .data-badge { display: inline-block; margin-right: 0.8em; margin-bottom: 0.3em; transition: color 0.2s; }
+    .data-badge-leave { display: block; margin-bottom: 0.2em; transition: color 0.2s; }
+
+    .today-applied { color: #ffd700; }
+    body.is-admin .data-badge.today-applied:hover, body.is-admin .data-badge-leave.today-applied:hover { color: #55ff55; }
+
+     
+    dialog { border: none; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); padding: 20px; width: 400px; font-family: sans-serif; }
+    dialog::backdrop { background: rgba(0,0,0,0.5); }
+    .modal-field { margin-bottom: 15px; }
+    .modal-field label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .modal-field input[type="text"], .modal-field input[type="number"], .modal-field input[type="date"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    .modal-buttons { display: flex; justify-content: space-between; margin-top:20px; }
+    .modal-buttons-right { display: flex; gap: 10px; width: 100%; justify-content: flex-end; }
+    
+     
+    body.is-admin .cell-container:hover { background-color: #f9f9f9; cursor: pointer; }
+    body.is-admin .td-leave:hover { background-color: #f9f9f9; cursor: pointer; }
+    body.is-admin .clickable-item:hover { color: blue !important; text-decoration: underline; cursor: pointer; }
+    body.is-admin .td-trip { cursor: pointer; }
+    body.is-admin .trip-block:hover { border-color: blue !important; z-index: 30 !important; }
+    body.is-admin .signage-cell-clickable { cursor: pointer; }
+    body.is-admin .signage-cell-clickable:hover { background-color: #1a1a1a; }
+    body.is-admin .data-badge:hover, body.is-admin .data-badge-leave:hover { color: #55ff55; }
+</style>
+</head>
+<body>
+
+<div class="control-panel-wrapper no-print" id="controlPanelWrapper">
+    <div class="control-panel-header" onclick="toggleControlPanel()">
+        <div style="display: flex; align-items: center; font-family: sans-serif;">
+            <span id="panelToggleIcon" style="margin-right: 10px; font-size: 14px; width: 14px; text-align: center; color: #555;">▼</span>
+            <strong style="color: #333;">操作パネル・設定</strong>
+        </div>
+        <div style="font-size: 13px; font-family: sans-serif; display: flex; align-items: center;">
+            <span style="color: #555;">ログイン: <strong id="loginUser"></strong></span>
+            <span id="roleBadge" style="padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 10px; font-weight: bold;"></span>
+            <span id="syncStatus" style="font-size: 11px; color: #888; margin-left: 15px;">同期待機中...</span>
+        </div>
+    </div>
+    
+    <div class="control-panel" id="controlPanelBody">
+        <div class="control-group">
+            <label>表示月: <input type="month" id="monthInput"></label>
+        </div>
+        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+            <label>表示切替: 
+                <select id="viewMode" onchange="renderView()" style="padding: 5px;">
+                    <option value="1day">1日分（サイネージ風）</option>
+                    <option value="10days">10日分カレンダー</option>
+                </select>
+            </label>
+            <label id="daySelectContainer" style="display:inline-block;">
+                日: <input type="number" id="daySelect" min="1" max="31" value="1" onchange="renderView()" style="width: 50px; padding: 5px;">
+            </label>
+        </div>
+        <div class="control-group sys-admin-only">
+            <label>特別勤務CSV: <input type="file" id="specialCsv" accept=".csv" style="width: 150px;"></label>
+        </div>
+        <div class="control-group sys-admin-only">
+            <label>教員CSV: <input type="file" id="teacherCsv" accept=".csv" style="width: 150px;"></label>
+        </div>
+        <div class="control-group sys-admin-only">
+            <label>セットCSV: <input type="file" id="groupCsv" accept=".csv" style="width: 150px;"></label>
+        </div>
+        <div class="control-group" style="display:flex; gap:10px;">
+            <button onclick="saveToCloud()" class="btn-blue sys-admin-only">手動保存</button>
+            <button id="btnLoadCloud" onclick="loadFromCloud(false)" class="btn-gray">手動読込</button>
+            <button onclick="window.print()" class="btn-cyan">PDF出力・印刷</button>
+            <button onclick="openClearModal()" class="btn-red sys-admin-only">初期化</button>
+        </div>
+    </div>
+</div>
+
+<div id="pagesContainer"></div>
+
+<datalist id="teachersList"></datalist>
+<datalist id="groupsList"></datalist>
+
+<dialog id="inputModal">
+    <h3 id="modalTitle" style="margin-top: 0;">データ追加/編集</h3>
+    
+    
+    <div class="modal-field" id="dataTypeField">
+        <label>追加データの種類:</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <label><input type="radio" name="dataType" value="trip" onchange="switchFormType()"> 出張</label>
+            <label><input type="radio" name="dataType" value="standby" onchange="switchFormType()"> 自宅待機</label>
+            <label><input type="radio" name="dataType" value="leave" onchange="switchFormType()"> 年休</label>
+            <label><input type="radio" name="dataType" value="late" onchange="switchFormType()"> 遅刻</label>
+            <label><input type="radio" name="dataType" value="early" onchange="switchFormType()"> 早退</label>
+            <label><input type="radio" name="dataType" value="notice" onchange="switchFormType()"> 特別掲示</label>
+        </div>
+    </div>
+
+    <div class="modal-field" id="appliedTodayContainer" style="margin-bottom: 15px; background: #fff3cd; padding: 10px; border-radius: 4px; border: 1px solid #ffeeba;">
+        <label style="display: flex; align-items: center; cursor: pointer; color: #856404; font-weight: bold; margin: 0;">
+            <input type="checkbox" id="isTodayApplied" style="width: auto; margin-right: 8px; transform: scale(1.2);">
+            当日申請（サイネージで黄色文字表示）
+        </label>
+    </div>
+
+    <div id="formTrip" style="display: none;">
+        <div class="modal-field" style="display:flex; gap:10px;">
+            <div style="flex:1;"><label>開始日:</label><input type="date" id="tripStart"></div>
+            <div style="flex:1;"><label>終了日:</label><input type="date" id="tripEnd"></div>
+        </div>
+        
+        <div class="modal-field">
+            <label><input type="radio" name="tripType" value="person" checked onchange="toggleTripType()"> 個人</label>
+            <label><input type="radio" name="tripType" value="set" onchange="toggleTripType()"> セット（四角枠）</label>
+            <label><input type="radio" name="tripType" value="custom_set" onchange="toggleTripType()"> 臨時セット</label>
+        </div>
+        <div class="modal-field">
+            <label id="tripNameLabel">氏名:</label>
+            <input type="text" id="tripName" list="teachersList">
+        </div>
+        <div class="modal-field">
+            <label>時刻:</label>
+            
+            <input type="text" id="tripTime" placeholder="例: 800 または 1200 または 終日" inputmode="url">
+        </div>
+    </div>
+    <div id="formLeave" style="display: none;">
+        <div class="modal-field"><label>氏名:</label><input type="text" id="leaveName" list="teachersList"></div>
+    </div>
+    <div id="formLateEarly" style="display: none;">
+        <div class="modal-field"><label>氏名:</label><input type="text" id="leName" list="teachersList"></div>
+        <div class="modal-field">
+            <label>時刻:</label>
+            
+            <input type="text" id="leTime" placeholder="例: AM, PM, 800" inputmode="url">
+        </div>
+    </div>
+    
+    
+    <div id="formNotice" style="display: none;">
+        <div class="modal-field" style="display:flex; gap:10px;">
+            <div style="flex:1;"><label>開始日:</label><input type="date" id="noticeStart"></div>
+            <div style="flex:1;"><label>終了日:</label><input type="date" id="noticeEnd"></div>
+        </div>
+        <div class="modal-field">
+            <label>表示テキスト:</label>
+            <input type="text" id="noticeText" placeholder="例: 掲示物参照" value="掲示物参照">
+        </div>
+    </div>
+
+    <div class="modal-buttons" style="justify-content: space-between;">
+        <div><button id="btnDelete" class="btn-red" onclick="deleteCurrentItem()" style="display: none;">削除</button></div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-gray" onclick="closeModal()">キャンセル</button>
+            <button id="btnSave" class="btn-green" onclick="saveData()">追加/更新</button>
+        </div>
+    </div>
+</dialog>
+
+<dialog id="clearModal">
+    <h3 style="margin-top:0;">期間データ初期化</h3>
+    <p class="info-text" style="color:#d32f2f; margin-bottom: 15px;">
+        指定した期間に入力された「出張・自宅待機・特別掲示・年休・遅刻・早退・外出」のデータをすべて削除します。<br>
+        ※指定期間に1日でも重なる複数日の出張等は、全体が削除されます。
+    </p>
+    <div class="modal-field" style="display:flex; gap:10px; align-items: center;">
+        <input type="number" id="clearStart" min="1" max="31" style="flex:1;">
+        <span>日から</span>
+        <input type="number" id="clearEnd" min="1" max="31" style="flex:1;">
+        <span>日まで</span>
+    </div>
+    <div class="modal-buttons">
+        <div class="modal-buttons-right">
+            <button class="btn-gray" onclick="document.getElementById('clearModal').close()">キャンセル</button>
+            <button class="btn-red" onclick="executeClearData()">初期化を実行</button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+function toggleControlPanel() {
+    const panel = document.getElementById('controlPanelBody');
+    const wrapper = document.getElementById('controlPanelWrapper');
+    const icon = document.getElementById('panelToggleIcon');
+    if (panel.classList.contains('collapsed')) {
+        panel.classList.remove('collapsed');
+        wrapper.classList.remove('collapsed');
+        icon.textContent = '▼';
+    } else {
+        panel.classList.add('collapsed');
+        wrapper.classList.add('collapsed');
+        icon.textContent = '▶';
+    }
+}
+
+
+function toVerticalText(str) {
+    if (!str) return '';
+    return str.replace(/\(/g, '（').replace(/\)/g, '）');
+}
+
+
+function toHalfWidth(str) {
+    if (!str) return '';
+    return str.replace(/[Ａ-Ｚａ-ｚ０-９：]/g, function(s) {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+}
+
+
+function applyHalfWidthAutoConversion(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    
+    el.addEventListener('input', (e) => {
+        if (e.isComposing) return; 
+        el.value = toHalfWidth(el.value);
+    });
+
+    el.addEventListener('compositionend', () => {
+        el.value = toHalfWidth(el.value); 
+    });
+
+    el.addEventListener('blur', () => {
+        el.value = toHalfWidth(el.value); 
+    });
+}
+
+let lastLoadedJson = "";
+let isEditing = false; 
+let isDraggingTrip = false;
+let tripDragTarget = null;
+let tripDragStartX = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('loginUser').textContent = USER_EMAIL || "不明";
+    const roleBadge = document.getElementById('roleBadge');
+    
+    
+    applyHalfWidthAutoConversion('tripTime');
+    applyHalfWidthAutoConversion('leTime');
+
+    if (IS_ADMIN) {
+        document.body.classList.add('is-admin');
+        roleBadge.textContent = "編集可能（管理者）";
+        roleBadge.style.backgroundColor = "#28a745";
+        roleBadge.style.color = "#fff";
+
+        document.addEventListener('mousedown', handleTripDragStart, {passive: false});
+        document.addEventListener('mousemove', handleTripDragMove, {passive: false});
+        document.addEventListener('mouseup', handleTripDragEnd);
+        document.addEventListener('touchstart', handleTripDragStart, {passive: false});
+        document.addEventListener('touchmove', handleTripDragMove, {passive: false});
+        document.addEventListener('touchend', handleTripDragEnd);
+    } else {
+        roleBadge.textContent = "閲覧のみ";
+        roleBadge.style.backgroundColor = "#6c757d";
+        roleBadge.style.color = "#fff";
+        document.querySelectorAll('.sys-admin-only').forEach(el => el.classList.add('admin-only'));
+    }
+});
+
+function autoSaveToCloud() {
+    if (!IS_ADMIN) return;
+    saveToStorage();
+    const jsonStr = JSON.stringify(appData);
+    lastLoadedJson = jsonStr; 
+    google.script.run.saveToDrive(jsonStr, appData.year, appData.month);
+}
+
+function saveToCloud() {
+    if (!IS_ADMIN) return alert("権限がありません。");
+    const btn = event.target;
+    btn.textContent = "保存中...";
+    btn.disabled = true;
+
+    saveToStorage(); 
+    const jsonStr = JSON.stringify(appData);
+    lastLoadedJson = jsonStr;
+
+    google.script.run
+        .withSuccessHandler(() => {
+            alert("保存が完了しました。");
+            btn.textContent = "手動保存";
+            btn.disabled = false;
+        })
+        .withFailureHandler((err) => {
+            alert("保存失敗: " + err);
+            btn.textContent = "手動保存";
+            btn.disabled = false;
+        })
+        .saveToDrive(jsonStr, appData.year, appData.month); 
+}
+
+function loadFromCloud(isAuto = false) {
+    if (isAuto && isEditing) return; 
+
+    const btn = document.getElementById('btnLoadCloud');
+    const syncStatus = document.getElementById('syncStatus');
+    
+    if (!isAuto && btn) {
+        btn.disabled = true;
+        btn.textContent = "読込中...";
+    }
+    if (isAuto) syncStatus.textContent = "同期中...";
+
+    google.script.run
+        .withSuccessHandler((jsonStr) => {
+            if (jsonStr) {
+                if (lastLoadedJson !== jsonStr) {
+                    lastLoadedJson = jsonStr;
+                    appData = JSON.parse(jsonStr);
+                    migrateData();
+                    document.getElementById('monthInput').value = `${appData.year}-${String(appData.month).padStart(2, '0')}`;
+                    renderView();
+                    if (!isAuto) alert("最新データを読み込みました。");
+                } else {
+                    if (!isAuto) alert("データはすでに最新です。");
+                }
+            }
+            if (!isAuto && btn) {
+                btn.disabled = false;
+                btn.textContent = "手動読込";
+            }
+            
+            const now = new Date();
+            syncStatus.textContent = `最終同期: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            checkAndMoveToToday();
+        })
+        .withFailureHandler((err) => {
+            console.error("同期エラー:", err);
+            syncStatus.textContent = "同期失敗";
+            if (!isAuto && btn) {
+                btn.disabled = false;
+                btn.textContent = "手動読込";
+            }
+        })
+        .loadFromDrive(appData.year, appData.month); 
+}
+
+function checkAndMoveToToday() {
+    const mode = document.getElementById('viewMode').value;
+    if (mode === '1day') {
+        const now = new Date();
+        const todayY = now.getFullYear();
+        const todayM = now.getMonth() + 1;
+        const todayD = now.getDate();
+        
+        if (appData.year === todayY && appData.month === todayM) {
+            const currentSelectedD = parseInt(document.getElementById('daySelect').value);
+            if (currentSelectedD !== todayD) {
+                goToToday();
+            }
+        }
+    }
+}
+
+const KEYS = { SPECIAL: 'att_special', TEACHERS: 'att_teachers', GROUPS: 'att_groups' };
+let appData = { year: 0, month: 0, monthTrips: [], monthStandbys: [], monthNotices: [], records: {}, laneWidths: {} };
+let holidays = {}; let specialDays = {}; let groupsData = {}; 
+
+document.addEventListener('DOMContentLoaded', async () => {
+    loadMasters();
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('monthInput').value = currentMonthStr;
+    
+    document.getElementById('monthInput').addEventListener('change', (e) => {
+        initData(e.target.value);
+        loadFromCloud(true);
+    });
+
+    document.getElementById('specialCsv').addEventListener('change', handleSpecialCsv);
+    document.getElementById('teacherCsv').addEventListener('change', handleTeacherCsv);
+    document.getElementById('groupCsv').addEventListener('change', handleGroupCsv);
+
+    try { holidays = await (await fetch('https://holidays-jp.github.io/api/v1/date.json')).json(); } catch(e) {}
+    
+    initData(currentMonthStr);
+    loadFromCloud(true); 
+
+    setInterval(() => {
+        loadFromCloud(true);
+    }, 60000);
+});
+
+window.addEventListener('resize', () => {
+    if (document.getElementById('viewMode').value === '1day') adjustSignageFontSize();
+});
+
+function getAppStorageKey() { return `att_data_${appData.year}_${appData.month}`; }
+
+function saveToStorage() { 
+    localStorage.setItem(getAppStorageKey(), JSON.stringify(appData)); 
+}
+
+function loadMasters() {
+    try {
+        if(localStorage.getItem(KEYS.SPECIAL)) specialDays = JSON.parse(localStorage.getItem(KEYS.SPECIAL));
+        if(localStorage.getItem(KEYS.TEACHERS)) updateTeachersList(JSON.parse(localStorage.getItem(KEYS.TEACHERS)));
+        if(localStorage.getItem(KEYS.GROUPS)) {
+            groupsData = JSON.parse(localStorage.getItem(KEYS.GROUPS));
+            updateGroupsList(Object.keys(groupsData));
+        }
+    } catch(e) {}
+}
+
+function updateTeachersList(arr) {
+    const dl = document.getElementById('teachersList'); dl.innerHTML = '';
+    arr.forEach(t => dl.appendChild(new Option(t)));
+}
+function updateGroupsList(keys) {
+    const dl = document.getElementById('groupsList'); dl.innerHTML = '';
+    keys.forEach(k => {
+        const membersStr = groupsData[k] ? groupsData[k].join(', ') : '';
+        const opt = document.createElement('option');
+        opt.value = `${k} - ${membersStr}`; 
+        dl.appendChild(opt);
+    });
+}
+
+function migrateData() {
+    if (!appData.monthStandbys) appData.monthStandbys = [];
+    if (!appData.monthTrips) appData.monthTrips = [];
+    if (!appData.monthNotices) appData.monthNotices = [];
+
+    
+    appData.monthTrips.forEach(trip => {
+        if (!trip.startDate && trip.startDay) {
+            trip.startDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(trip.startDay).padStart(2, '0')}`;
+        }
+        if (!trip.endDate && trip.endDay) {
+            trip.endDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(trip.endDay).padStart(2, '0')}`;
+        }
+    });
+
+    
+    appData.monthStandbys.forEach(sb => {
+        if (!sb.startDate && sb.startDay) {
+            sb.startDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(sb.startDay).padStart(2, '0')}`;
+        }
+        if (!sb.endDate && sb.endDay) {
+            sb.endDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(sb.endDay).padStart(2, '0')}`;
+        }
+    });
+
+    for (let i = 1; i <= 31; i++) {
+        if (appData.records[i]) {
+            if (typeof appData.records[i].leaveUpper !== 'undefined') {
+                const upper = appData.records[i].leaveUpper || [];
+                const lower = appData.records[i].leaveLower || [];
+                if (!appData.records[i].leave) appData.records[i].leave = [];
+                appData.records[i].leave = [...appData.records[i].leave, ...upper, ...lower];
+                delete appData.records[i].leaveUpper; delete appData.records[i].leaveLower;
+            }
+            if (!appData.records[i].leave) appData.records[i].leave = [];
+            if (typeof appData.records[i].memo === 'undefined') appData.records[i].memo = "";
+            
+            if (typeof appData.records[i].standby !== 'undefined') {
+                let oldStandby = appData.records[i].standby;
+                if (oldStandby && oldStandby.trim() !== "") {
+                    let names = oldStandby.split(/[\s\n]+/).filter(n => n);
+                    names.forEach((name, idx) => {
+                        appData.monthStandbys.push({
+                            id: Date.now() + i + idx + Math.floor(Math.random() * 10000),
+                            type: 'person',
+                            name: name,
+                            members: [],
+                            time: "",
+                            startDay: i,
+                            endDay: i,
+                            startDate: `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(i).padStart(2, '0')}`,
+                            endDate: `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+                        });
+                    });
+                }
+                delete appData.records[i].standby; 
+            }
+        }
+    }
+}
+
+function initData(monthStr) {
+    const [y, m] = monthStr.split('-');
+    appData.year = parseInt(y); appData.month = parseInt(m);
+    lastLoadedJson = "";
+    
+    const daysInMonth = new Date(appData.year, appData.month, 0).getDate();
+    document.getElementById('daySelect').max = daysInMonth;
+
+    const saved = localStorage.getItem(getAppStorageKey());
+    if (saved) {
+        appData = JSON.parse(saved);
+        migrateData();
+    } else {
+        appData.monthTrips = []; 
+        appData.monthStandbys = [];
+        appData.monthNotices = [];
+        appData.records = {};
+        for(let i=1; i<=daysInMonth; i++) {
+            appData.records[i] = { leave: [], late: [], early: [], memo: "" };
+        }
+    }
+    renderView();
+}
+
+function goToToday() {
+    const now = new Date();
+    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (document.getElementById('monthInput').value !== monthStr) {
+        document.getElementById('monthInput').value = monthStr;
+        initData(monthStr);
+        loadFromCloud(true);
+    }
+    document.getElementById('daySelect').value = now.getDate();
+    renderView();
+}
+
+function saveMemo(day, text) {
+    isEditing = false;
+    if (!IS_ADMIN) return;
+    if(appData.records[day]) { 
+        appData.records[day].memo = text; 
+        autoSaveToCloud(); 
+    }
+}
+
+function getJapaneseEra(year) {
+    if (year >= 2019) return `令和 ${year - 2018}`;
+    if (year >= 1989) return `平成 ${year - 1988}`;
+    return `昭和 ${year - 1925}`;
+}
+
+function renderView() {
+    saveToStorage(); 
+    const mode = document.getElementById('viewMode').value;
+    if (mode === '10days') {
+        document.getElementById('daySelectContainer').style.display = 'none';
+        renderTenDaysView();
+    } else {
+        document.getElementById('daySelectContainer').style.display = 'inline-block';
+        renderOneDayView();
+    }
+}
+
+function renderTenDaysView() {
+    const container = document.getElementById('pagesContainer'); container.innerHTML = '';
+    const daysInMonth = new Date(appData.year, appData.month, 0).getDate();
+    const diff = appData.month >= 4 ? appData.month - 4 : appData.month + 8;
+    const baseNo = diff * 3;
+
+    const chunks = [{ start: 1, end: 10, no: baseNo + 1 }, { start: 11, end: 20, no: baseNo + 2 }];
+    if (daysInMonth >= 21) chunks.push({ start: 21, end: daysInMonth, no: baseNo + 3 });
+
+    assignTripLanes();
+    const nendo = appData.month <= 3 ? appData.year - 1 : appData.year;
+
+    chunks.forEach(chunk => {
+        const rowCount = chunk.end - chunk.start + 1;
+        const rowHeight = 100 / rowCount; 
+
+        const pageDiv = document.createElement('div'); pageDiv.className = 'page page-tendays';
+        pageDiv.innerHTML = `
+            <div class="header">
+                <div style="width:180px; font-size:16px; text-align:left; line-height:1.2; font-family:sans-serif;">
+                    <div style="margin-bottom:4px; font-family:'MS Mincho', serif;">${nendo}年度</div>
+                    <div style="color:var(--morning-bg); font-weight:bold; letter-spacing:1px;">12:10勤務</div>
+                    <div style="color:var(--afternoon-bg); font-weight:bold; letter-spacing:1px;">14:10勤務</div>
+                </div>
+                <div class="header-title" style="font-size: 26px;">
+                    ${getJapaneseEra(appData.year)}年 ${appData.month}月 出張・年休・遅刻・早退願 (届)
+                </div>
+                <div style="width:180px; text-align:right;">No.${chunk.no}</div>
+            </div>
+            <div class="table-container">
+                <table class="tendays-table">
+                    <thead>
+                        <tr>
+                            <th class="col-memo"></th>
+                            <th class="col-day" style="border-left: 1px solid var(--border-color);">日</th>
+                            <th class="col-weekday">曜日</th>
+                            <th class="col-trip">出張者名</th>
+                            <th class="col-leave">年休</th>
+                            <th class="col-late">遅刻</th>
+                            <th class="col-early">早退</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-chunk-${chunk.no}"></tbody>
+                </table>
+            </div>
+        `;
+        container.appendChild(pageDiv);
+        const tbody = pageDiv.querySelector('tbody');
+        const weekdays = ['日','月','火','水','木','金','土'];
+
+        // chunkごとに結合状態（rowspan）を追跡するカウンタ
+        let skipRowsCount = 0;
+
+        for(let d = chunk.start; d <= chunk.end; d++) {
+            const w = new Date(appData.year, appData.month - 1, d).getDay();
+            const dateStr = `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isHoliday = holidays[dateStr] !== undefined;
+            const specDay = specialDays[`${appData.year}-${appData.month}-${d}`];
+
+            let cellStyle = '';
+            if (specDay === '午前勤務日' || specDay === '12:10勤務') cellStyle = `background-color: var(--morning-bg); color: var(--morning-color);`;
+            else if (specDay === '14:10勤務') cellStyle = `background-color: var(--afternoon-bg); color: var(--afternoon-color);`;
+            else if (specDay === '休業日') cellStyle = `background-color: var(--closed-bg); color: var(--closed-color);`;
+            else if (w === 0 || isHoliday) cellStyle = `background-color: var(--holiday-bg); color: #000;`;
+            else if (w === 6) cellStyle = `background-color: var(--saturday-bg); color: #000;`;
+
+            
+            const targetDateStr = `${appData.year}/${String(appData.month).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+            const targetDate = new Date(targetDateStr);
+            const activeNotice = appData.monthNotices ? appData.monthNotices.find(n => {
+                const sD = new Date(n.startDate.replace(/-/g, '/'));
+                const eD = new Date(n.endDate.replace(/-/g, '/'));
+                return targetDate >= sD && targetDate <= eD;
+            }) : null;
+
+            let leaveLateEarlyHtml = '';
+            let isRowSpanned = false;
+
+            if (skipRowsCount > 0) {
+                
+                leaveLateEarlyHtml = '';
+                skipRowsCount--;
+                isRowSpanned = true;
+            } else if (activeNotice) {
+                
+                let spanDays = 1;
+                let checkDate = new Date(appData.year, appData.month - 1, d);
+                const eD = new Date(activeNotice.endDate.replace(/-/g, '/'));
+                
+                while (true) {
+                    const nextDay = checkDate.getDate() + 1;
+                    if (nextDay > chunk.end) break;
+                    
+                    const nextDate = new Date(appData.year, appData.month - 1, nextDay);
+                    if (nextDate <= eD) {
+                        spanDays++;
+                        checkDate = nextDate;
+                    } else {
+                        break;
+                    }
+                }
+                
+                
+                
+                leaveLateEarlyHtml = `
+                    <td colspan="3" rowspan="${spanDays}" class="td-notice" onclick="editNotice(event, ${d}, ${activeNotice.id})">
+                        <div class="notice-text-large">
+                            ${toVerticalText(activeNotice.text)}
+                        </div>
+                    </td>
+                `;
+                skipRowsCount = spanDays - 1;
+            } else {
+                leaveLateEarlyHtml = `
+                    <td class="td-leave" onclick="openModal(${d}, 'leave')">
+                        <div class="leave-wrapper" id="leaveWrap-${d}"></div>
+                    </td>
+                    <td><div class="cell-container" id="late-${d}" onclick="openModal(${d}, 'late')"></div></td>
+                    <td><div class="cell-container" id="early-${d}" onclick="openModal(${d}, 'early')"></div></td>
+                `;
+            }
+
+            const memoText = appData.records[d]?.memo || '';
+            const tr = document.createElement('tr');
+            tr.style.height = `${rowHeight}%`; tr.style.position = 'relative'; tr.style.zIndex = 100 - d;
+            
+            tr.innerHTML = `
+                <td class="td-memo" ${IS_ADMIN ? 'contenteditable="true"' : ''} onfocus="isEditing=true" onblur="saveMemo(${d}, this.innerText)">${memoText}</td>
+                <td class="td-day" style="${cellStyle} border-left: 1px solid var(--border-color);">${d}</td>
+                <td class="td-weekday" style="${cellStyle}">${weekdays[w]}</td>
+                <td class="td-trip" onclick="handleTripClick(event, ${d})">
+                    <div class="trip-lanes-wrapper"><div class="trip-lanes" id="trip-${d}"></div></div>
+                </td>
+                ${leaveLateEarlyHtml}
+            `;
+            tbody.appendChild(tr);
+
+            if (!isRowSpanned) {
+                if (!activeNotice) {
+                    renderCellData(d, chunk);
+                } else {
+                    renderCellTripOnly(d, chunk);
+                }
+            } else {
+                
+                renderCellTripOnly(d, chunk);
+            }
+        }
+    });
+    requestAnimationFrame(adjustLayout);
+}
+
+function adjustLayout() {
+    const daysInMonth = new Date(appData.year, appData.month, 0).getDate();
+    const ITEM_WIDTH = 16; 
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const tripLanes = document.getElementById(`trip-${d}`);
+        const leaveWrap = document.getElementById(`leaveWrap-${d}`);
+        if (!tripLanes || !leaveWrap) continue;
+
+        const tdTrip = tripLanes.closest('td'); const tdLeave = leaveWrap.closest('td');
+        if (!tdTrip || !tdLeave) continue;
+
+        leaveWrap.style.paddingLeft = '0px'; tdTrip.style.borderRight = ''; 
+        const tdTripWidth = tdTrip.offsetWidth;
+        
+        let actualTripWidth = 0;
+        tripLanes.querySelectorAll('.lane').forEach(lane => actualTripWidth += lane.offsetWidth);
+
+        let overflow = 0;
+        if (actualTripWidth > tdTripWidth) {
+            overflow = actualTripWidth - tdTripWidth;
+            leaveWrap.style.paddingLeft = `${overflow + 5}px`;
+            tdTrip.style.borderRight = 'none';
+        }
+
+        const data = appData.records[d];
+        if (data && data.leave && data.leave.length > 0) {
+            const tdLeaveWidth = tdLeave.clientWidth;
+            const availableWidth = tdLeaveWidth - overflow - 10;
+            let maxPerLine = Math.floor(availableWidth / ITEM_WIDTH);
+            if (maxPerLine < 1) maxPerLine = 1; 
+
+            leaveWrap.innerHTML = '';
+            const upperDiv = document.createElement('div'); upperDiv.className = 'leave-half';
+            const lowerDiv = document.createElement('div'); lowerDiv.className = 'leave-half';
+
+            data.leave.forEach((item, idx) => {
+                if (!item) return; 
+                let nameStr = typeof item === 'object' ? item.name : item;
+                
+                
+                nameStr = toVerticalText(nameStr);
+                
+                const span = document.createElement('span'); 
+                span.className = 'vertical-text clickable-item'; 
+                span.textContent = nameStr;
+                span.onclick = (e) => { e.stopPropagation(); editItem(d, 'leave', idx); };
+                if (idx < maxPerLine) upperDiv.appendChild(span);
+                else lowerDiv.appendChild(span);
+            });
+
+            if (data.leave.length > maxPerLine) upperDiv.style.borderBottom = '1px dotted #ccc';
+            leaveWrap.appendChild(upperDiv);
+            if (data.leave.length > maxPerLine) leaveWrap.appendChild(lowerDiv);
+        }
+    }
+}
+
+function formatTimeText(timeStr) {
+    if(!timeStr) return '';
+    if (/^\d{3,4}$/.test(timeStr)) {
+        let str = timeStr.padStart(4, '0');
+        let h = timeStr.length === 3 ? timeStr.slice(0, 1) : str.slice(0, 2);
+        let m = timeStr.length === 3 ? timeStr.slice(1, 3) : str.slice(2, 4);
+        return `<span class="tcy">${h}</span><span class="tcy">${m}</span>`;
+    }
+    if (/^\d{1,2}:\d{2}$/.test(timeStr)) {
+        let parts = timeStr.split(':');
+        return `<span class="tcy">${parts[0]}</span><span class="tcy">${parts[1]}</span>`;
+    }
+    return timeStr.split('').map(c => `<span class="tcy">${c}</span>`).join('');
+}
+
+function getTripWidth(t) {
+    return t.type === 'set' ? (((t.members || []).length * 15) + 8) : 18; 
+}
+
+function assignTripLanes() {
+    appData.monthTrips.forEach(trip => {
+        if (trip.manualLane === undefined) {
+            delete trip.lane;
+        }
+    });
+
+    // 開始日の年月日順にソート (同じなら期間が長いものが先)
+    appData.monthTrips.sort((a, b) => {
+        const adStr = (a.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(a.startDay).padStart(2,'0')}`).replace(/-/g, '/');
+        const bdStr = (b.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(b.startDay).padStart(2,'0')}`).replace(/-/g, '/');
+        if (adStr !== bdStr) return adStr.localeCompare(bdStr);
+
+        const aeStr = (a.endDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(a.endDay).padStart(2,'0')}`).replace(/-/g, '/');
+        const beStr = (b.endDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(b.endDay).padStart(2,'0')}`).replace(/-/g, '/');
+        return new Date(beStr) - new Date(aeStr);
+    });
+
+    appData.monthTrips.forEach(trip => {
+        if (trip.manualLane !== undefined) {
+            trip.lane = trip.manualLane;
+            return;
+        }
+        
+        let lane = 0;
+        while (true) {
+            const conflict = appData.monthTrips.find(t => {
+                if (t === trip || t.lane !== lane) return false;
+
+                const tStart = new Date((t.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(t.startDay).padStart(2,'0')}`).replace(/-/g, '/'));
+                const tEnd = new Date((t.endDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(t.endDay).padStart(2,'0')}`).replace(/-/g, '/'));
+                const tripStart = new Date((trip.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(trip.startDay).padStart(2,'0')}`).replace(/-/g, '/'));
+                const tripEnd = new Date((trip.endDate || `${appData.year}-${String(trip.endDay).padStart(2,'0')}`).replace(/-/g, '/'));
+
+                return Math.max(tStart, tripStart) <= Math.min(tEnd, tripEnd);
+            });
+            if (!conflict) { trip.lane = lane; break; }
+            lane++;
+        }
+    });
+}
+
+function renderCellTripOnly(day, chunk) {
+    const tripEl = document.getElementById(`trip-${day}`);
+    if (!tripEl) return;
+    tripEl.innerHTML = '';
+    
+    const targetDateStr = `${appData.year}/${String(appData.month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+    const targetDate = new Date(targetDateStr);
+
+    const tripsToday = appData.monthTrips.filter(t => {
+        const sD = new Date((t.startDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(t.startDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        const eD = new Date((t.endDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(t.endDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        return targetDate >= sD && targetDate <= eD;
+    });
+
+    const maxLaneToday = tripsToday.length > 0 ? Math.max(...tripsToday.map(t => t.lane)) : -1;
+
+    for (let l = 0; l <= maxLaneToday; l++) {
+        const tripsInLane = tripsToday.filter(t => t.lane === l);
+        
+        const laneDiv = document.createElement('div');
+        laneDiv.className = 'lane';
+        
+        let laneW = 18; 
+        if (tripsInLane.length > 0) {
+            laneW = Math.max(...tripsInLane.map(t => getTripWidth(t)));
+        }
+        laneDiv.style.width = `${laneW}px`; 
+        laneDiv.style.minWidth = `${laneW}px`;
+
+        tripsInLane.forEach(trip => {
+            const chunkStartDate = new Date(appData.year, appData.month - 1, chunk.start);
+            const chunkEndDate = new Date(appData.year, appData.month - 1, chunk.end);
+
+            const tStart = new Date((trip.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(trip.startDay).padStart(2,'0')}`).replace(/-/g, '/'));
+            const tEnd = new Date((trip.endDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(trip.endDay).padStart(2,'0')}`).replace(/-/g, '/'));
+
+            const renderStart = new Date(Math.max(tStart, chunkStartDate));
+            const renderEnd = new Date(Math.min(tEnd, chunkEndDate));
+
+            if (renderStart <= renderEnd) {
+                const renderStartDay = renderStart.getDate();
+                const renderEndDay = renderEnd.getDate();
+                const duration = renderEndDay - renderStartDay + 1;
+
+                if (day === renderStartDay) {
+                    const block = document.createElement('div'); 
+                    block.className = 'trip-block'; block.dataset.id = trip.id;
+                    block.style.width = `${getTripWidth(trip)}px`;
+                    block.style.height = `calc(${duration * 100}% + ${duration}px)`; 
+                    
+                    if (trip.type === 'person') block.classList.add('type-person');
+                    else block.classList.add('type-set');
+
+                    const isSingleDay = (tStart.getTime() === tEnd.getTime());
+                    if (!isSingleDay) block.style.backgroundColor = '#d9d9d9'; 
+                    else if (trip.type === 'person') block.style.backgroundColor = 'transparent'; 
+                    else block.style.backgroundColor = '#fff';
+
+                    const contentWrap = document.createElement('div'); contentWrap.className = 'trip-content';
+                    
+                    const isActualStartInChunk = (tStart >= chunkStartDate && tStart <= chunkEndDate);
+                    if (isActualStartInChunk) {
+                        if (day !== tStart.getDate()) contentWrap.style.visibility = 'hidden';
+                    } else {
+                        if (day !== chunk.start) contentWrap.style.visibility = 'hidden';
+                    }
+
+                    const namesWrap = document.createElement('div'); namesWrap.className = 'names-wrap';
+                    if (trip.type === 'set') {
+                        namesWrap.classList.add('set-box');
+                        (trip.members || []).forEach(m => {
+                            const span = document.createElement('span'); span.className = 'vertical-text item-block'; 
+                            
+                            span.textContent = toVerticalText(m);
+                            namesWrap.appendChild(span);
+                        });
+                    } else {
+                        const span = document.createElement('span'); span.className = 'vertical-text item-block'; 
+                        
+                        span.textContent = toVerticalText(trip.name);
+                        namesWrap.appendChild(span);
+                    }
+                    const timeSpan = document.createElement('span'); timeSpan.className = 'vertical-text time-text';
+                    timeSpan.innerHTML = formatTimeText(trip.time);
+                    
+                    contentWrap.appendChild(namesWrap); contentWrap.appendChild(timeSpan);
+                    block.appendChild(contentWrap); laneDiv.appendChild(block);
+                }
+            }
+        });
+        tripEl.appendChild(laneDiv);
+    }
+}
+
+function renderCellData(day, chunk) {
+    
+    renderCellTripOnly(day, chunk);
+    
+    const data = appData.records[day];
+    if(!data) return;
+
+    ['late', 'early'].forEach(type => {
+        const el = document.getElementById(`${type}-${day}`);
+        if(el) {
+            el.innerHTML = '';
+            data[type].forEach((item, idx) => {
+                
+                const div = document.createElement('div'); div.className = 'clickable-item';
+                div.style.display = 'flex'; div.style.flexDirection = 'column'; div.style.alignItems = 'center';
+                div.onclick = (e) => { e.stopPropagation(); editItem(day, type, idx); };
+                
+                
+                const n = document.createElement('span'); n.className = 'vertical-text'; 
+                n.textContent = toVerticalText(item.name);
+                
+                
+                const t = document.createElement('span');
+                 t.className = 'vertical-text';
+                 t.style.fontFamily = 'sans-serif';
+                 t.style.fontSize='11px';
+                 t.style.marginTop='2px';
+                 t.innerHTML = formatTimeText(item.time);
+                
+                div.appendChild(n); div.appendChild(t); el.appendChild(div);
+            });
+        }
+    });
+}
+
+function handleTripDragStart(e) {
+    if (!IS_ADMIN) return;
+    const target = e.target.closest('.trip-block');
+    if (!target) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+    
+    
+    const tripId = parseInt(target.dataset.id);
+    const trip = appData.monthTrips.find(t => t.id === tripId);
+    if (trip) {
+        const sDStr = (trip.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(trip.startDay).padStart(2,'0')}`).replace(/-/g, '/');
+        const currentMonthStart = new Date(appData.year, appData.month - 1, 1);
+        if (new Date(sDStr) < currentMonthStart) {
+            return; 
+        }
+    }
+
+    tripDragTarget = target;
+    tripDragStartX = e.type.includes('mouse') ? e.pageX : e.touches[0].pageX;
+    isDraggingTrip = false; 
+
+    target.style.transition = 'none';
+    target.style.zIndex = '1000';
+    target.style.opacity = '0.7';
+    target.style.boxShadow = '0 0 5px rgba(0,0,0,0.5)';
+    document.body.style.cursor = 'ew-resize';
+}
+
+function handleTripDragMove(e) {
+    if (!tripDragTarget) return;
+    const currentX = e.type.includes('mouse') ? e.pageX : e.touches[0].pageX;
+    const diffX = currentX - tripDragStartX;
+    
+    if (Math.abs(diffX) > 5) {
+        isDraggingTrip = true;
+        if(e.cancelable) e.preventDefault(); 
+        tripDragTarget.style.transform = `translateX(calc(-50% + ${diffX}px))`;
+    }
+}
+
+function handleTripDragEnd(e) {
+    if (!tripDragTarget) return;
+    
+    document.body.style.cursor = '';
+    const currentX = e.type.includes('mouse') ? e.pageX : (e.changedTouches ? e.changedTouches[0].pageX : tripDragStartX);
+    const diffX = currentX - tripDragStartX;
+    
+    tripDragTarget.style.transition = '';
+    tripDragTarget.style.zIndex = '';
+    tripDragTarget.style.opacity = '';
+    tripDragTarget.style.boxShadow = '';
+    tripDragTarget.style.transform = `translateX(-50%)`; 
+    
+    if (isDraggingTrip) {
+        const laneShift = Math.round(diffX / 20);
+        if (laneShift !== 0) {
+            const tripId = parseInt(tripDragTarget.dataset.id);
+            const trip = appData.monthTrips.find(t => t.id === tripId);
+            if (trip) {
+                let currentLane = trip.manualLane !== undefined ? trip.manualLane : trip.lane;
+                let newLane = currentLane + laneShift;
+                if (newLane < 0) newLane = 0;
+                trip.manualLane = newLane; 
+                renderView();
+                autoSaveToCloud();
+            }
+        }
+    }
+    
+    tripDragTarget = null;
+    setTimeout(() => { isDraggingTrip = false; }, 50); 
+}
+
+function handleTripClick(e, day) {
+    if (!IS_ADMIN) return;
+    if (isDraggingTrip) return;
+    const block = e.target.closest('.trip-block');
+    if (block) editItem(day, 'trip', parseInt(block.dataset.id));
+    else openModal(day, 'trip');
+}
+
+function renderOneDayView() {
+    const container = document.getElementById('pagesContainer'); container.innerHTML = '';
+    const day = parseInt(document.getElementById('daySelect').value);
+    
+    const dateObj = new Date(appData.year, appData.month - 1, day);
+    const weekdays = ['日','月','火','水','木','金','土'];
+    const w = weekdays[dateObj.getDay()];
+
+    const targetDateStr = `${appData.year}/${String(appData.month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+    const targetDate = new Date(targetDateStr);
+
+    
+    const trips = appData.monthTrips.filter(t => {
+        const sD = new Date((t.startDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(t.startDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        const eD = new Date((t.endDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(t.endDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        return targetDate >= sD && targetDate <= eD;
+    });
+    const standbys = appData.monthStandbys.filter(s => {
+        const sD = new Date((s.startDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(s.startDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        const eD = new Date((s.endDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(s.endDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        return targetDate >= sD && targetDate <= eD;
+    });
+
+    
+    const activeNotice = appData.monthNotices ? appData.monthNotices.find(n => {
+        const sD = new Date(n.startDate.replace(/-/g, '/'));
+        const eD = new Date(n.endDate.replace(/-/g, '/'));
+        return targetDate >= sD && targetDate <= eD;
+    }) : null;
+
+    const rec = appData.records[day] || { leave: [], late: [], early: [], memo: "" };
+
+    const infoHTML = IS_ADMIN 
+        ? `<div class="info-text">※外出欄は、枠内をクリックして直接テキストを入力・編集できます。</div>` 
+        : '';
+
+    let html = `
+        <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 15px; font-family: sans-serif;" class="no-print">
+            <button onclick="goToToday()" class="btn-cyan" style="font-weight: bold; padding: 8px 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">本日の日付</button>
+            ${infoHTML}
+        </div>
+        
+        <div class="signage-wrapper">
+            <div class="signage-container">
+                <div class="signage-grid">
+                    
+                    <div class="signage-cell signage-cell-clickable" onclick="openModal(${day}, 'trip')">
+                        <div class="signage-title">出 張</div>
+                        <div class="signage-content">
+                            ${trips.map(t => renderSignageItem(day, 'trip', t)).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="signage-cell signage-cell-clickable" onclick="openModal(${day}, 'standby')">
+                        <div class="signage-title">自宅待機</div>
+                        <div class="signage-content">
+                            ${standbys.map(s => renderSignageItem(day, 'standby', s)).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="signage-cell-date-wrapper">
+                        <div class="signage-date">
+                            ${appData.month}月 ${day}日(${w})
+                        </div>
+                        <div class="signage-out">
+                            <div class="signage-title">外 出</div>
+                            <div class="signage-content" 
+                                 ${IS_ADMIN ? 'contenteditable="true"' : ''} 
+                                 style="white-space: pre-wrap; ${IS_ADMIN ? 'cursor:text;' : ''}" 
+                                 onfocus="isEditing=true"
+                                 onblur="saveMemo(${day}, this.innerText)">${rec.memo || ''}</div>
+                        </div>
+                    </div>
+
+                    <!-- 年休・遅刻・早退セルのサイネージ表示 (特別表示がある場合は、特別掲示を表示) -->
+                    <div class="signage-cell signage-cell-clickable" onclick="${activeNotice ? `editNotice(event, ${day}, ${activeNotice.id})` : `openModal(${day}, 'leave')`}">
+                        <div class="signage-title">年 休</div>
+                        <div class="signage-content signage-content-leave">
+                            ${activeNotice ? `<div style="color: #ff5555; font-weight: bold; font-size: 1.5vw;">${activeNotice.text}</div>` : rec.leave.map((l, idx) => renderSignageItem(day, 'leave', l, idx)).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="signage-cell signage-cell-clickable" onclick="${activeNotice ? `editNotice(event, ${day}, ${activeNotice.id})` : `openModal(${day}, 'late')`}">
+                        <div class="signage-title">遅 刻</div>
+                        <div class="signage-content">
+                            ${activeNotice ? `<div style="color: #ff5555; font-weight: bold; font-size: 1.5vw;">${activeNotice.text}</div>` : rec.late.map((l, idx) => renderSignageItem(day, 'late', l, idx)).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="signage-cell signage-cell-clickable" onclick="${activeNotice ? `editNotice(event, ${day}, ${activeNotice.id})` : `openModal(${day}, 'early')`}">
+                        <div class="signage-title">早 退</div>
+                        <div class="signage-content">
+                            ${activeNotice ? `<div style="color: #ff5555; font-weight: bold; font-size: 1.5vw;">${activeNotice.text}</div>` : rec.early.map((e, idx) => renderSignageItem(day, 'early', e, idx)).join('')}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
+    requestAnimationFrame(() => adjustSignageFontSize());
+}
+
+function adjustSignageFontSize() {
+    const containers = document.querySelectorAll('.signage-cell, .signage-out');
+    containers.forEach(container => {
+        const content = container.querySelector('.signage-content');
+        if (!content) return;
+        let fontSize = 2.2; 
+        content.style.fontSize = `${fontSize}cqw`;
+        let loopCount = 0;
+        
+        while ((content.scrollHeight > content.clientHeight || content.scrollWidth > content.clientWidth) && fontSize > 0.8 && loopCount < 30) {
+            fontSize -= 0.1;
+            content.style.fontSize = `${fontSize}cqw`;
+            loopCount++;
+        }
+    });
+}
+
+function renderSignageItem(day, type, data, index) {
+    if(!data) return '';
+    let text = '';
+    let isTodayApplied = false;
+    
+    if (type === 'trip' || type === 'standby') {
+        isTodayApplied = !!data.isTodayApplied;
+        const nameText = data.type === 'set' ? (data.members || []).join('・') : data.name;
+        const timeText = data.time ? `(${data.time})` : '';
+        
+        let period = '';
+        const sD = new Date((data.startDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(data.startDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        const eD = new Date((data.endDate || `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(data.endDay).padStart(2, '0')}`).replace(/-/g, '/'));
+        if (sD.getTime() !== eD.getTime()) {
+            period = ` <span style="font-size:70%; color:#55ff55;">(~${eD.getMonth()+1}/${eD.getDate()})</span>`;
+        }
+        text = `${nameText}${timeText}${period}`;
+        const cls = isTodayApplied ? ' today-applied' : '';
+        return `<div class="data-badge${cls}" onclick="event.stopPropagation(); editItem(${day}, '${type}', ${data.id})">${text}</div>`;
+    } else if (type === 'leave') {
+        isTodayApplied = typeof data === 'object' && data.isTodayApplied;
+        const name = typeof data === 'object' ? data.name : data;
+        const cls = isTodayApplied ? ' today-applied' : '';
+        return `<div class="data-badge-leave${cls}" onclick="event.stopPropagation(); editItem(${day}, 'leave', ${index})">${name}</div>`;
+    } else {
+        isTodayApplied = !!data.isTodayApplied;
+        const timeText = data.time ? `(${data.time})` : '';
+        text = `${data.name}${timeText}`;
+        const cls = isTodayApplied ? ' today-applied' : '';
+        return `<div class="data-badge${cls}" onclick="event.stopPropagation(); editItem(${day}, '${type}', ${index})">${text}</div>`;
+    }
+}
+
+const modal = document.getElementById('inputModal');
+
+// ▼ データ入力種類変更時のUI切替処理 ▼
+function switchFormType() {
+    const val = document.querySelector('input[name="dataType"]:checked').value;
+    
+    // 全入力枠を一旦非表示に
+    ['formTrip', 'formLeave', 'formLateEarly', 'formNotice'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+
+    const isTodayAppliedField = document.getElementById('appliedTodayContainer');
+    
+    if (val === 'notice') {
+        isTodayAppliedField.style.display = 'none';
+        document.getElementById('formNotice').style.display = 'block';
+    } else {
+        isTodayAppliedField.style.display = 'block';
+        if (val === 'trip' || val === 'standby') {
+            document.getElementById('formTrip').style.display = 'block';
+            toggleTripType();
+        } else if (val === 'leave') {
+            document.getElementById('formLeave').style.display = 'block';
+        } else if (val === 'late' || val === 'early') {
+            document.getElementById('formLateEarly').style.display = 'block';
+        }
+    }
+}
+
+// ▼ 臨時セットのUI切り替え ▼
+function toggleTripType() {
+    const tType = document.querySelector('input[name="tripType"]:checked').value;
+    const inputEl = document.getElementById('tripName');
+    const labelEl = document.getElementById('tripNameLabel');
+    if (tType === 'set') {
+        inputEl.setAttribute('list', 'groupsList');
+        inputEl.placeholder = '';
+        labelEl.textContent = 'セット名:';
+    } else if (tType === 'custom_set') {
+        inputEl.removeAttribute('list');
+        inputEl.placeholder = '例: 山田, 佐藤, 鈴木 (カンマか読点区切り)';
+        labelEl.textContent = '氏名(複数):';
+    } else {
+        inputEl.setAttribute('list', 'teachersList');
+        inputEl.placeholder = '';
+        labelEl.textContent = '氏名:';
+    }
+}
+
+function openModal(day, type) {
+    if (!IS_ADMIN) return; 
+    isEditing = true;
+    currentEdit = { day, type, mode: 'add', id: null, index: null };
+    
+    // ラジオボタンの種類のデフォルト設定
+    const radio = document.querySelector(`input[name="dataType"][value="${type}"]`);
+    if (radio) radio.checked = true;
+
+    // データ種別切り替えUIを表示する（新規追加時のみ）
+    document.getElementById('dataTypeField').style.display = 'block';
+
+    document.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
+    document.getElementById('isTodayApplied').checked = false; 
+    document.getElementById('btnDelete').style.display = 'none'; 
+    document.getElementById('btnSave').textContent = "追加";
+
+    // コントロールのロック状態の初期化
+    document.getElementById('btnSave').disabled = false;
+    document.getElementById('tripName').disabled = false;
+    document.getElementById('tripTime').disabled = false;
+    document.getElementById('tripStart').disabled = false;
+    document.getElementById('tripEnd').disabled = false;
+    document.getElementById('noticeText').disabled = false;
+    document.getElementById('noticeStart').disabled = false;
+    document.getElementById('noticeEnd').disabled = false;
+
+    // 特別掲示テキストの初期値
+    document.getElementById('noticeText').value = "掲示物参照";
+
+    let title = `${appData.month}月${day}日 - `;
+    
+    // 各日付入力枠に年月日初期値(JST)をセット
+    const dateStr = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    document.getElementById('tripStart').value = dateStr; 
+    document.getElementById('tripEnd').value = dateStr; 
+    document.getElementById('noticeStart').value = dateStr; 
+    document.getElementById('noticeEnd').value = dateStr; 
+
+    if (type === 'trip' || type === 'standby') {
+        title += (type === 'trip' ? "出張" : "自宅待機") + "追加"; 
+        document.querySelector('input[name="tripType"][value="person"]').checked = true;
+    } else if (type === 'leave') {
+        title += `年休 追加`;
+    } else if (type === 'late' || type === 'early') {
+        title += (type === 'late' ? "遅刻" : "早退") + "追加";
+    } else if (type === 'notice') {
+        title += "特別掲示 追加";
+    }
+    
+    switchFormType();
+    document.getElementById('modalTitle').textContent = title; 
+    modal.showModal();
+}
+
+function editNotice(e, day, noticeId) {
+    if (e) e.stopPropagation();
+    editItem(day, 'notice', noticeId);
+}
+
+// ▼ 編集復元機能 ▼
+function editItem(day, type, idOrIndex) {
+    if (!IS_ADMIN) return;
+    isEditing = true;
+    currentEdit = { day, type, mode: 'edit', id: null, index: null };
+    document.getElementById('isTodayApplied').checked = false; 
+    document.getElementById('btnDelete').style.display = 'block'; 
+    document.getElementById('btnSave').textContent = "更新";
+
+    // 編集時はデータ種類を変更できないよう非表示にする
+    document.getElementById('dataTypeField').style.display = 'none';
+
+    // 編集ロック状態の初期化
+    document.getElementById('btnSave').disabled = false;
+    document.getElementById('btnDelete').disabled = false;
+    document.getElementById('tripName').disabled = false;
+    document.getElementById('tripTime').disabled = false;
+    document.getElementById('tripStart').disabled = false;
+    document.getElementById('tripEnd').disabled = false;
+    document.getElementById('noticeText').disabled = false;
+    document.getElementById('noticeStart').disabled = false;
+    document.getElementById('noticeEnd').disabled = false;
+
+    // 種類選択ラジオボタンをあらかじめ合わせておく
+    const radio = document.querySelector(`input[name="dataType"][value="${type}"]`);
+    if (radio) radio.checked = true;
+
+    let title = `${appData.month}月${day}日 - `;
+    
+    if (type === 'notice') {
+        currentEdit.id = idOrIndex;
+        title += "特別掲示 編集";
+        const item = appData.monthNotices.find(n => n.id === idOrIndex);
+        
+        let sDate = item.startDate;
+        let eDate = item.endDate;
+        if (!sDate) sDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (!eDate) eDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        document.getElementById('noticeStart').value = sDate;
+        document.getElementById('noticeEnd').value = eDate;
+        document.getElementById('noticeText').value = item.text || "掲示物参照";
+        
+        // ▼ 前月開始データのロック判定 ▼
+        const sD = new Date(sDate.replace(/-/g, '/'));
+        const currentMonthStart = new Date(appData.year, appData.month - 1, 1);
+        if (sD < currentMonthStart) {
+            document.getElementById('btnSave').disabled = true;
+            document.getElementById('btnDelete').disabled = true;
+            document.getElementById('noticeText').disabled = true;
+            document.getElementById('noticeStart').disabled = true;
+            document.getElementById('noticeEnd').disabled = true;
+            title += "（前月開始のため編集不可）";
+        }
+    } else if (type === 'trip' || type === 'standby') {
+        currentEdit.id = idOrIndex; 
+        title += (type === 'trip' ? "出張" : "自宅待機") + "編集";
+        const arr = (type === 'trip') ? appData.monthTrips : appData.monthStandbys;
+        const item = arr.find(t => t.id === idOrIndex);
+        
+        // 年月日値の取得（ない場合は互換補完）
+        let sDate = item.startDate;
+        let eDate = item.endDate;
+        if (!sDate) sDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(item.startDay).padStart(2, '0')}`;
+        if (!eDate) eDate = `${appData.year}-${String(appData.month).padStart(2, '0')}-${String(item.endDay).padStart(2, '0')}`;
+
+        document.getElementById('tripStart').value = sDate; 
+        document.getElementById('tripEnd').value = eDate;
+        
+        // ▼ 前月開始データのロック判定 ▼
+        const sD = new Date(sDate.replace(/-/g, '/'));
+        const currentMonthStart = new Date(appData.year, appData.month - 1, 1);
+        if (sD < currentMonthStart) {
+            document.getElementById('btnSave').disabled = true;
+            document.getElementById('btnDelete').disabled = true;
+            document.getElementById('tripName').disabled = true;
+            document.getElementById('tripTime').disabled = true;
+            document.getElementById('tripStart').disabled = true;
+            document.getElementById('tripEnd').disabled = true;
+            title += "（前月開始のため編集不可）";
+        }
+        
+        let uiType = item.type;
+        if (item.type === 'set') {
+            if (item.isCustomSet) {
+                uiType = 'custom_set';
+            } else if (!groupsData[item.name] && item.members && item.members.length > 1) {
+                uiType = 'custom_set';
+            }
+        }
+        document.querySelector(`input[name="tripType"][value="${uiType}"]`).checked = true;
+        toggleTripType();
+        
+        if (uiType === 'custom_set') {
+            document.getElementById('tripName').value = (item.members || []).join(', ');
+        } else {
+            document.getElementById('tripName').value = item.name; 
+        }
+        
+        document.getElementById('tripTime').value = item.time;
+        document.getElementById('isTodayApplied').checked = !!item.isTodayApplied; 
+    } else if (type === 'leave') {
+        currentEdit.index = idOrIndex; title += `年休 編集`;
+        const item = appData.records[day].leave[idOrIndex];
+        document.getElementById('leaveName').value = typeof item === 'object' ? item.name : item;
+        document.getElementById('isTodayApplied').checked = typeof item === 'object' ? !!item.isTodayApplied : false;
+    } else {
+        currentEdit.index = idOrIndex; title += (type === 'late' ? "遅刻" : "早退") + "編集";
+        const data = appData.records[day][type][idOrIndex];
+        document.getElementById('leName').value = data.name; document.getElementById('leTime').value = data.time;
+        document.getElementById('isTodayApplied').checked = !!data.isTodayApplied; 
+    }
+    switchFormType();
+    document.getElementById('modalTitle').textContent = title; modal.showModal();
+}
+
+function closeModal() { 
+    isEditing = false;
+    modal.close(); 
+}
+
+function deleteCurrentItem() {
+    if (!IS_ADMIN) return;
+    if(!confirm("このデータを削除しますか？")) return;
+    const { day, type, id, index } = currentEdit;
+    
+    if (type === 'notice') {
+        appData.monthNotices = appData.monthNotices.filter(n => n.id !== id);
+    } else if (type === 'trip') {
+        appData.monthTrips = appData.monthTrips.filter(t => t.id !== id);
+    } else if (type === 'standby') {
+        appData.monthStandbys = appData.monthStandbys.filter(t => t.id !== id);
+    } else {
+        appData.records[day][type].splice(index, 1);
+    }
+    
+    renderView(); 
+    closeModal();
+    autoSaveToCloud(); 
+}
+
+// ▼ 登録データ保存処理 ▼
+function saveData() {
+    if (!IS_ADMIN) return;
+    const { day, type: origType, mode, id, index } = currentEdit;
+    const isTodayApplied = document.getElementById('isTodayApplied').checked; 
+    
+    // modeがeditのときは元の種類、add(新規追加)のときはラジオボタンの選択に従う
+    const type = (mode === 'edit') ? origType : document.querySelector('input[name="dataType"]:checked').value;
+    
+    if (type === 'notice') {
+        if (!appData.monthNotices) appData.monthNotices = [];
+        let startDateStr = document.getElementById('noticeStart').value;
+        let endDateStr = document.getElementById('noticeEnd').value;
+        let text = document.getElementById('noticeText').value.trim();
+        
+        if (!startDateStr || !endDateStr) return alert("日付を入力してください。");
+        if (!text) return alert("表示テキストを入力してください。");
+        
+        if (new Date(startDateStr.replace(/-/g, '/')) > new Date(endDateStr.replace(/-/g, '/'))) {
+            [startDateStr, endDateStr] = [endDateStr, startDateStr];
+        }
+
+        if (mode === 'edit') {
+            const item = appData.monthNotices.find(n => n.id === id);
+            if (item) {
+                item.startDate = startDateStr;
+                item.endDate = endDateStr;
+                item.text = text;
+            }
+        } else {
+            appData.monthNotices.push({
+                id: Date.now(),
+                startDate: startDateStr,
+                endDate: endDateStr,
+                text: text
+            });
+        }
+    } else if (type === 'trip' || type === 'standby') {
+        const arr = (type === 'trip') ? appData.monthTrips : appData.monthStandbys;
+        const uiType = document.querySelector('input[name="tripType"]:checked').value;
+        let rawName = document.getElementById('tripName').value.trim();
+        const time = document.getElementById('tripTime').value.trim();
+        
+        let startDateStr = document.getElementById('tripStart').value;
+        let endDateStr = document.getElementById('tripEnd').value;
+        if(!startDateStr || !endDateStr) return alert("日付を入力してください。");
+        if(!rawName) return alert("名前を入力してください。");
+        
+        if (new Date(startDateStr.replace(/-/g, '/')) > new Date(endDateStr.replace(/-/g, '/'))) {
+            [startDateStr, endDateStr] = [endDateStr, startDateStr];
+        }
+
+        const sD = new Date(startDateStr.replace(/-/g, '/'));
+        const eD = new Date(endDateStr.replace(/-/g, '/'));
+        const sDay = sD.getDate();
+        const eDay = eD.getDate();
+        
+        let tType, name, members, isCustomSet;
+        if (uiType === 'custom_set') {
+            tType = 'set';
+            isCustomSet = true;
+            members = rawName.split(/[,，、]+/).map(s => s.trim()).filter(s => s);
+            name = members.join(', ');
+            if(members.length === 0) return alert("教員名を入力してください。");
+        } else if (uiType === 'set') {
+            tType = 'set';
+            isCustomSet = false;
+            name = rawName.split(' - ')[0].trim();
+            members = groupsData[name] || [name];
+        } else {
+            tType = 'person';
+            isCustomSet = false;
+            name = rawName;
+            members = [];
+        }
+
+        if (mode === 'edit') {
+            const item = arr.find(t => t.id === id);
+            item.type = tType; item.name = name; item.time = time; 
+            item.startDay = sDay; item.endDay = eDay; item.members = members;
+            item.startDate = startDateStr; item.endDate = endDateStr;
+            item.isTodayApplied = isTodayApplied; item.isCustomSet = isCustomSet;
+        } else {
+            arr.push({ 
+                id: Date.now(), type: tType, name, members, time, 
+                startDay: sDay, endDay: eDay, 
+                startDate: startDateStr, endDate: endDateStr,
+                isTodayApplied, isCustomSet 
+            });
+        }
+    } else {
+        const target = appData.records[day][type];
+        if (type === 'leave') {
+            const name = document.getElementById('leaveName').value.trim();
+            if(name) { 
+                if(mode === 'edit') target[index] = { name, isTodayApplied }; 
+                else target.push({ name, isTodayApplied }); 
+            }
+        } else {
+            const name = document.getElementById('leName').value.trim(); const time = document.getElementById('leTime').value.trim();
+            if(name) { 
+                if(mode === 'edit') target[index] = { name, time, isTodayApplied }; 
+                else target.push({ name, time, isTodayApplied }); 
+            }
+        }
+    }
+    
+    renderView(); 
+    closeModal();
+    autoSaveToCloud(); 
+}
+
+function openClearModal() {
+    if (!IS_ADMIN) return;
+    const daysInMonth = new Date(appData.year, appData.month, 0).getDate();
+    document.getElementById('clearStart').value = 1; document.getElementById('clearStart').max = daysInMonth;
+    document.getElementById('clearEnd').value = daysInMonth; document.getElementById('clearEnd').max = daysInMonth;
+    document.getElementById('clearModal').showModal();
+}
+
+function executeClearData() {
+    if (!IS_ADMIN) return;
+    let sDay = parseInt(document.getElementById('clearStart').value);
+    let eDay = parseInt(document.getElementById('clearEnd').value);
+    
+    if (isNaN(sDay) || isNaN(eDay)) return alert("数値を入力してください。");
+    if (sDay > eDay) [sDay, eDay] = [eDay, sDay];
+    
+    if (!confirm(`${sDay}日から${eDay}日までのデータを初期化します。\nよろしいですか？`)) return;
+    
+    const clearStartD = new Date(appData.year, appData.month - 1, sDay);
+    const clearEndD = new Date(appData.year, appData.month - 1, eDay);
+
+    // 出張の期間を日付オブジェクトで判定してクリア
+    appData.monthTrips = appData.monthTrips.filter(t => {
+        const tStart = new Date((t.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(t.startDay).padStart(2,'0')}`).replace(/-/g, '/'));
+        const tEnd = new Date((t.endDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(t.endDay).padStart(2,'0')}`).replace(/-/g, '/'));
+        return tStart > clearEndD || tEnd < clearStartD;
+    });
+
+    // 自宅待機
+    appData.monthStandbys = appData.monthStandbys.filter(t => {
+        const tStart = new Date((t.startDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(t.startDay).padStart(2,'0')}`).replace(/-/g, '/'));
+        const tEnd = new Date((t.endDate || `${appData.year}-${String(appData.month).padStart(2,'0')}-${String(t.endDay).padStart(2,'0')}`).replace(/-/g, '/'));
+        return tStart > clearEndD || tEnd < clearStartD;
+    });
+
+    // 特別掲示
+    appData.monthNotices = appData.monthNotices ? appData.monthNotices.filter(n => {
+        const tStart = new Date(n.startDate.replace(/-/g, '/'));
+        const tEnd = new Date(n.endDate.replace(/-/g, '/'));
+        return tStart > clearEndD || tEnd < clearStartD;
+    }) : [];
+    
+    for (let d = sDay; d <= eDay; d++) {
+        if (appData.records[d]) appData.records[d] = { leave: [], late: [], early: [], memo: "" };
+    }
+    
+    renderView(); 
+    document.getElementById('clearModal').close();
+    autoSaveToCloud(); 
+}
+
+function decodeCSV(buffer) {
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(buffer); } 
+    catch (e) { return new TextDecoder('shift_jis').decode(buffer); }
+}
+
+function handleSpecialCsv(e) {
+    if (!IS_ADMIN) return;
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        specialDays = {};
+        const text = decodeCSV(event.target.result);
+        text.split(/\r?\n/).forEach(line => {
+            const parts = line.split(',');
+            if(parts.length >= 2) {
+                const match = parts[0].trim().match(/(\d{4})[年/-](\d{1,2})[月/-](\d{1,2})/);
+                if(match) specialDays[`${parseInt(match[1])}-${parseInt(match[2])}-${parseInt(match[3])}`] = parts[1].trim();
+            }
+        });
+        localStorage.setItem(KEYS.SPECIAL, JSON.stringify(specialDays));
+        alert("特別勤務日を反映し、保存しました。"); renderView();
+    }; 
+    reader.readAsArrayBuffer(file);
+}
+
+function handleTeacherCsv(e) {
+    if (!IS_ADMIN) return;
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const arr = [];
+        const text = decodeCSV(event.target.result);
+        text.split(/\r?\n/).forEach(line => { if(line.trim()) arr.push(line.trim()); });
+        localStorage.setItem(KEYS.TEACHERS, JSON.stringify(arr));
+        updateTeachersList(arr); alert("教員マスターを保存しました。");
+    }; 
+    reader.readAsArrayBuffer(file);
+}
+
+function handleGroupCsv(e) {
+    if (!IS_ADMIN) return;
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        groupsData = {};
+        const text = decodeCSV(event.target.result);
+        text.split(/\r?\n/).forEach(line => {
+            const cols = line.split(',').map(s => s.trim()).filter(s => s);
+            if(cols.length > 0) groupsData[cols[0]] = cols.slice(1);
+        });
+        localStorage.setItem(KEYS.GROUPS, JSON.stringify(groupsData));
+        updateGroupsList(Object.keys(groupsData)); alert("セットマスターを保存しました。");
+    }; 
+    reader.readAsArrayBuffer(file);
+}
+</script>
+</body>
+</html>
