@@ -6,11 +6,7 @@
   <meta http-equiv="refresh" content="3600">
   <title>デジタルサイネージ</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: #000000;
       color: #ffffff;
@@ -49,7 +45,6 @@
       display: flex;
       flex-direction: column;
     }
-    /* 日付表示 */
     .signage-date {
       border-bottom: 2px solid #ffffff;
       text-align: center;
@@ -68,19 +63,17 @@
       box-sizing: border-box;
       overflow: hidden;
     }
-    /* タイトル（出張、年休など） */
     .signage-title {
-      color: #ffffff; /* 電子ペーパー用に白ではっきり表示 */
+      color: #ffffff;
       font-size: 19px;
       font-weight: bold;
       margin-bottom: 4px;
       letter-spacing: 0.2em;
       line-height: 1.1;
     }
-    /* 本文（氏名・時間） */
     .signage-content {
       color: #ffffff;
-      font-size: 15px; /* 多くの情報が入るサイズ */
+      font-size: 15px;
       line-height: 1.35;
       flex: 1;
       overflow: hidden;
@@ -112,22 +105,20 @@
       margin-top: 4px;
     }
     .today-applied {
-      text-decoration: underline; /* モノクロ画面でも目立つよう下線 */
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="signage-container">
     <div class="signage-grid">
-      <!-- 出張 -->
       <div class="signage-cell">
         <div class="signage-title">出 張</div>
         <div class="signage-content">
-          <div class=" data-badge">今枝(700) <span class="period-text">(~10/25)</span></div><div class=" data-badge">千葉(1500) <span class="period-text">(~10/25)</span></div><div class=" data-badge">小川博(800)</div><div class=" data-badge">渡辺範(800)</div><div class=" data-badge">長瀬(810)</div><div class=" data-badge">石井(1300)</div><div class=" data-badge">立松(1500)</div><div class=" data-badge">伊藤鋼・須原(1500)</div><div class=" data-badge">鈴木裕(1430)</div><div class=" data-badge">北川(1530)</div><div class=" data-badge">林原・浅野・小島・近藤・奥田成・大澤・原田・辰巳(1500)</div><div class=" data-badge">法兼(1400)</div>
+          <div class=" data-badge">今枝 <span class="period-text">(~10/25)</span></div><div class=" data-badge">千葉(1500) <span class="period-text">(~10/25)</span></div><div class=" data-badge">小川博(800)</div><div class=" data-badge">渡辺範(800)</div><div class=" data-badge">長瀬(810)</div><div class=" data-badge">石井(1300)</div><div class=" data-badge">立松(1500)</div><div class=" data-badge">伊藤鋼・須原(1500)</div><div class=" data-badge">鈴木裕(1430)</div><div class=" data-badge">北川(1530)</div><div class=" data-badge">林原・浅野・小島・近藤・奥田成・大澤・原田・辰巳(1500)</div><div class=" data-badge">法兼(1400)</div>
         </div>
       </div>
 
-      <!-- 自宅待機 -->
       <div class="signage-cell">
         <div class="signage-title">自宅待機</div>
         <div class="signage-content">
@@ -135,7 +126,6 @@
         </div>
       </div>
 
-      <!-- 日付 ＆ 外出 -->
       <div class="signage-cell-date-wrapper">
         <div class="signage-date">10月 23日(金)</div>
         <div class="signage-out">
@@ -144,7 +134,6 @@
         </div>
       </div>
 
-      <!-- 年休 -->
       <div class="signage-cell">
         <div class="signage-title">年 休</div>
         <div class="signage-content signage-content-leave">
@@ -152,7 +141,6 @@
         </div>
       </div>
 
-      <!-- 遅刻 -->
       <div class="signage-cell">
         <div class="signage-title">遅 刻</div>
         <div class="signage-content">
@@ -160,7 +148,6 @@
         </div>
       </div>
 
-      <!-- 早退 -->
       <div class="signage-cell">
         <div class="signage-title">早 退</div>
         <div class="signage-content">
